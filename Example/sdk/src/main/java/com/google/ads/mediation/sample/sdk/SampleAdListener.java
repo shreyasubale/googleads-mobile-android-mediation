@@ -16,6 +16,8 @@
 
 package com.google.ads.mediation.sample.sdk;
 
+import android.util.Log;
+
 /**
  * A sample ad listener to listen for ad events. These ad events more or less represent the events
  * that a typical ad network would provide.

@@ -118,7 +118,7 @@ public class SampleInterstitialAd extends SampleAdListener implements MediationI
   public void showAd(@NonNull Context context) {
     // Show the interstitial ad.
     if (sampleInterstitial != null) {
-      sampleInterstitial.show();
+      sampleInterstitial.show("https://vdx.mylab.to/?productName=VdxMobileInApp&size=300x250");
     }
   }
 

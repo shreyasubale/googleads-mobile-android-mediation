@@ -2,15 +2,12 @@ package com.google.ads.mediation.line
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.os.Bundle
-import android.util.DisplayMetrics
 import android.view.View
 import android.widget.ImageView
 import androidx.core.os.bundleOf
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.five_corp.ad.AdLoader
 import com.five_corp.ad.FiveAdConfig
 import com.five_corp.ad.FiveAdErrorCode
 import com.five_corp.ad.FiveAdNative
@@ -23,14 +20,12 @@ import com.google.android.gms.ads.mediation.UnifiedNativeAdMapper
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -49,23 +44,10 @@ class LineNativeAdTest {
   private lateinit var mediationAdConfiguration: MediationNativeAdConfiguration
 
   private val context = ApplicationProvider.getApplicationContext<Context>()
-  private val mockIconBitmap =
-    mock<Bitmap> {
-      on { getScaledHeight(any<Int>()) } doReturn 1
-      on { getScaledHeight(any<Canvas>()) } doReturn 1
-      on { getScaledHeight(any<DisplayMetrics>()) } doReturn 1
-      on { getScaledWidth(any<Int>()) } doReturn 1
-      on { getScaledWidth(any<Canvas>()) } doReturn 1
-      on { getScaledWidth(any<DisplayMetrics>()) } doReturn 1
-    }
+  private val mockIconBitmap = mock<Bitmap>()
   private val mockInfoBitmap = mock<Bitmap>()
   private val mockFiveAdConfig = mock<FiveAdConfig>()
-  private val mockFiveAdNative =
-    mock<FiveAdNative> {
-      on { adTitle } doReturn "FunnyTitle"
-      on { descriptionText } doReturn "DescriptionText"
-      on { buttonText } doReturn "ButtonText"
-    }
+  private val mockFiveAdNative = mock<FiveAdNative>()
   private val sdkFactory =
     mock<SdkFactory> {
       on { createFiveAdConfig(any()) } doReturn mockFiveAdConfig
@@ -82,37 +64,31 @@ class LineNativeAdTest {
     LineSdkFactory.delegate = sdkFactory
 
     mediationAdConfiguration = createMediationNativeAdConfiguration()
-    LineNativeAd.newInstance(
-        mediationAdConfiguration,
-        mediationAdLoadCallback,
-        Dispatchers.Unconfined,
-      )
+    LineNativeAd.newInstance(mediationAdConfiguration, mediationAdLoadCallback, Dispatchers.Main)
       .onSuccess { lineNativeAd = it }
     whenever(mediationAdLoadCallback.onSuccess(lineNativeAd)) doReturn mockMediationAdCallback
   }
 
   @Test
   fun onFiveAdLoad_mapsNativeAdAndInvokesOnSuccess() {
-    testCoroutineScope.runTest {
-      // Required to verify mediaView assignment
-      val spiedLineNativeAd = spy(lineNativeAd)
-      initiateImageLoadCallbacks()
-      spiedLineNativeAd.loadAd()
+    // Required to verify mediaView assignment
+    val spiedLineNativeAd = spy(lineNativeAd)
+    initiateImageLoadCallbacks()
 
+    testCoroutineScope.launch {
       spiedLineNativeAd.onFiveAdLoad(mockFiveAdNative)
-      advanceUntilIdle()
 
       with(spiedLineNativeAd) {
-        verify(this).overrideClickHandling = true
-        assertThat(headline).isEqualTo("FunnyTitle")
-        assertThat(body).isEqualTo("DescriptionText")
-        assertThat(callToAction).isEqualTo("ButtonText")
+        assertThat(lineNativeAd.overrideClickHandling).isTrue()
+        verify(mockFiveAdNative).setEventListener(this)
+        assertThat(headline).isEqualTo(mockFiveAdNative.adTitle)
+        assertThat(body).isEqualTo(mockFiveAdNative.descriptionText)
+        assertThat(callToAction).isEqualTo(mockFiveAdNative.buttonText)
         verify(this).setMediaView(mockFiveAdNative.adMainView)
         assertThat(advertiser).isEqualTo(mockFiveAdNative.advertiserName)
         verify(mockFiveAdNative).loadIconImageAsync(any())
-        assertThat(icon).isInstanceOf(LineNativeAd.LineNativeImage::class.java)
-        verify(mockFiveAdNative).setEventListener(this)
         verify(mockFiveAdNative).loadInformationIconImageAsync(any())
+        assertThat(icon).isInstanceOf(LineNativeAd.LineNativeImage::class.java)
         assertThat(adChoicesContent).isInstanceOf(ImageView::class.java)
         verify(mediationAdLoadCallback).onSuccess(this)
       }
@@ -134,17 +110,15 @@ class LineNativeAdTest {
 
   @Test
   fun onClick_invokesReportAdClickedAndOnAdLeftApplication() {
-    initiateImageLoadCallbacks()
-    testCoroutineScope.runTest {
-      lineNativeAd.loadAd()
+    testCoroutineScope.launch {
+      initiateImageLoadCallbacks()
       lineNativeAd.onFiveAdLoad(mockFiveAdNative)
-      advanceUntilIdle()
+
+      lineNativeAd.onClick(mockFiveAdNative)
+
+      verify(mockMediationAdCallback).reportAdClicked()
+      verify(mockMediationAdCallback).onAdLeftApplication()
     }
-
-    lineNativeAd.onClick(mockFiveAdNative)
-
-    verify(mockMediationAdCallback).reportAdClicked()
-    verify(mockMediationAdCallback).onAdLeftApplication()
   }
 
   @Test
@@ -154,10 +128,8 @@ class LineNativeAdTest {
 
   @Test
   fun onImpression_invokesReportAdImpression() {
-    testCoroutineScope.runTest {
+    testCoroutineScope.launch {
       initiateImageLoadCallbacks()
-      advanceUntilIdle()
-      lineNativeAd.loadAd()
       lineNativeAd.onFiveAdLoad(mockFiveAdNative)
 
       lineNativeAd.onImpression(mockFiveAdNative)
@@ -190,7 +162,6 @@ class LineNativeAdTest {
 
   @Test
   fun trackViews_invokesRegisterViews() {
-    lineNativeAd.loadAd()
     lineNativeAd.adChoicesContent = View(context)
     val viewContainer = View(context)
 
@@ -202,24 +173,6 @@ class LineNativeAdTest {
 
     verify(mockFiveAdNative)
       .registerViews(eq(viewContainer), eq(lineNativeAd.adChoicesContent), any())
-  }
-
-  @Test
-  fun loadRtbNativeAd_onLoad_mapsAdAndThenLoadsFiveAdNative() {
-    Mockito.mockStatic(AdLoader::class.java).use {
-      val mockAdLoader = mock<AdLoader>()
-      whenever(AdLoader.getAdLoader(eq(context), any())) doReturn mockAdLoader
-      initiateImageLoadCallbacks()
-
-      lineNativeAd.loadRtbAd()
-
-      val loadCallbackCaptor = argumentCaptor<AdLoader.LoadNativeAdCallback>()
-      verify(mockAdLoader).loadNativeAd(any(), loadCallbackCaptor.capture())
-      val capturedCallback = loadCallbackCaptor.firstValue
-      testCoroutineScope.runTest { capturedCallback.onLoad(mockFiveAdNative) }
-      verify(mockFiveAdNative).setEventListener(lineNativeAd)
-      verify(mediationAdLoadCallback).onSuccess(lineNativeAd)
-    }
   }
 
   private fun initiateImageLoadCallbacks(

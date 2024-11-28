@@ -49,8 +49,6 @@ public class MyTargetMediationAdapter extends Adapter
   // MyTarget SDK error domain.
   public static final String MY_TARGET_SDK_ERROR_DOMAIN = "com.my.target.ads";
 
-  public static final String ERROR_MSG_AD_FAILED_TO_SHOW = "MyTarget ad failed to show";
-
   /**
    * MyTarget SDK returned an error.
    */
@@ -80,11 +78,6 @@ public class MyTargetMediationAdapter extends Adapter
    * The loaded native ad from myTarget is missing some required assets (e.g. image or icon).
    */
   public static final int ERROR_MISSING_REQUIRED_NATIVE_ASSET = 105;
-
-  /**
-   * MyTarget SDK failed to show the ad.
-   */
-  public static final int ERROR_AD_FAILED_TO_SHOW = 106;
   // endregion
 
   private RewardedAd mRewardedAd;
@@ -241,16 +234,6 @@ public class MyTargetMediationAdapter extends Adapter
       // has autoplay param and starts immediately, so we can notify Google about this.
       mRewardedAdCallback.onVideoStart();
       mRewardedAdCallback.reportAdImpression();
-    }
-  }
-
-  @Override
-  public void onFailedToShow(@NonNull RewardedAd rewardedAd) {
-    AdError error =
-        new AdError(ERROR_AD_FAILED_TO_SHOW, ERROR_MSG_AD_FAILED_TO_SHOW, ERROR_DOMAIN);
-    Log.d(TAG, error.getMessage());
-    if (mRewardedAdCallback != null) {
-      mRewardedAdCallback.onAdFailedToShow(error);
     }
   }
 
