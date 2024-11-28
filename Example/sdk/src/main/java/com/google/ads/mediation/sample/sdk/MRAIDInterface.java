@@ -1,6 +1,7 @@
 package com.google.ads.mediation.sample.sdk;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.util.DisplayMetrics;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
@@ -9,10 +10,12 @@ public class MRAIDInterface {
     private String state = "loading";
     private WebView webView;
     private Activity activity;
+    private Dialog dialog;
 
-    public MRAIDInterface(WebView webView, Activity activity) {
+    public MRAIDInterface(WebView webView, Activity activity ,Dialog dialog) {
         this.webView = webView;
         this.activity = activity;
+        this.dialog = dialog;
     }
 
     @JavascriptInterface
@@ -66,6 +69,8 @@ public class MRAIDInterface {
     @JavascriptInterface
     public void close() {
         activity.runOnUiThread(() -> {
+//            this.activity
+            this.dialog.dismiss();
             // Implement close logic
             state = "default";
             webView.evaluateJavascript(
