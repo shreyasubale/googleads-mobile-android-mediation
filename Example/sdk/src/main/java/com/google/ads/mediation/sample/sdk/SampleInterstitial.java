@@ -76,7 +76,7 @@ public class SampleInterstitial {
     // Enable JavaScript
     webView.getSettings().setJavaScriptEnabled(true);
     mraidInterface =new MRAIDInterface(webView, this.activity);
-    webView.addJavascriptInterface(mraidInterface, "Android");
+    webView.addJavascriptInterface(mraidInterface, "MRAIDInterface");
 //    try {
 //      InputStream inputStream = context.getAssets().open("mraid.js");
 //      byte[] buffer = new byte[inputStream.available()];

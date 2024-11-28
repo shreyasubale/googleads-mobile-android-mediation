@@ -52,7 +52,7 @@ public class MRAIDInterface {
             // Implement expand logic
             state = "expanded";
             webView.evaluateJavascript(
-                    "updateState('expanded')",
+                    "mraid.setState('expanded')",
                     null
             );
         });
@@ -69,7 +69,7 @@ public class MRAIDInterface {
             // Implement close logic
             state = "default";
             webView.evaluateJavascript(
-                    "updateState('default')",
+                    "mraid.setState('default')",
                     null
             );
         });
