@@ -6,6 +6,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.view.ViewGroup.LayoutParams;
 import android.view.Window;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.RelativeLayout;
@@ -76,21 +77,34 @@ public class SampleInterstitial {
     webView.getSettings().setJavaScriptEnabled(true);
     mraidInterface =new MRAIDInterface(webView, this.activity);
     webView.addJavascriptInterface(mraidInterface, "Android");
-    try {
-      InputStream inputStream = context.getAssets().open("mraid.js");
-      byte[] buffer = new byte[inputStream.available()];
-      inputStream.read(buffer);
-      inputStream.close();
-
-      String mraidJs = new String(buffer, "UTF-8");
-      webView.evaluateJavascript(mraidJs, null);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+//    try {
+//      InputStream inputStream = context.getAssets().open("mraid.js");
+//      byte[] buffer = new byte[inputStream.available()];
+//      inputStream.read(buffer);
+//      inputStream.close();
+//
+//      String mraidJs = new String(buffer, "UTF-8");
+//      webView.evaluateJavascript(mraidJs, null);
+//    } catch (IOException e) {
+//      e.printStackTrace();
+//    }
 
 
     // Set WebViewClient to handle page loading
     webView.setWebViewClient(new WebViewClient() {
+
+      @Override
+      public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+        if (url.endsWith("mraid.js")) {
+          try {
+            InputStream mraidStream = view.getContext().getAssets().open("mraid.js");
+            return new WebResourceResponse("application/javascript", "UTF-8", mraidStream);
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        }
+        return super.shouldInterceptRequest(view, url);
+      }
       @Override
       public void onPageFinished(WebView view, String url) {
         super.onPageFinished(view, url);
