@@ -75,7 +75,18 @@ public class SampleInterstitial {
     // Enable JavaScript
     webView.getSettings().setJavaScriptEnabled(true);
     mraidInterface =new MRAIDInterface(webView, this.activity);
-    webView.addJavascriptInterface(mraidInterface, "mraid");
+    webView.addJavascriptInterface(mraidInterface, "Android");
+    try {
+      InputStream inputStream = context.getAssets().open("mraid.js");
+      byte[] buffer = new byte[inputStream.available()];
+      inputStream.read(buffer);
+      inputStream.close();
+
+      String mraidJs = new String(buffer, "UTF-8");
+      webView.evaluateJavascript(mraidJs, null);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
 
 
     // Set WebViewClient to handle page loading
@@ -84,17 +95,7 @@ public class SampleInterstitial {
       public void onPageFinished(WebView view, String url) {
         super.onPageFinished(view, url);
 
-        try {
-          InputStream inputStream = context.getAssets().open("mraid.js");
-          byte[] buffer = new byte[inputStream.available()];
-          inputStream.read(buffer);
-          inputStream.close();
 
-          String mraidJs = new String(buffer, "UTF-8");
-          webView.evaluateJavascript(mraidJs, null);
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
 
         mraidInterface.fireReadyEvent();
         if (listener != null) {
